@@ -1,0 +1,13 @@
+.next
+node_modules
+.pnpm-store
+.env
+.env*.local
+*.tsbuildinfo
+.vercel
+vercel.json.local
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/

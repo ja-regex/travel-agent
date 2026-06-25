@@ -1,0 +1,6 @@
+allowBuilds:
+  sharp: true
+  unrs-resolver: true
+minimumReleaseAgeExclude:
+  - '@types/node@26.0.1'
+  - openai@6.45.0
