@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useMemo, useRef, useState } from "react";
+import Image from "next/image";
+import { CSSProperties, FormEvent, useMemo, useRef, useState } from "react";
 import type { ChatMessage, StreamEvent, UsageEvent } from "@/lib/types";
 
 type UsageTotals = {
@@ -19,9 +20,15 @@ export default function Home() {
   const [usage, setUsage] = useState<UsageEvent[]>([]);
   const [totals, setTotals] = useState<UsageTotals | null>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [isComposerFocused, setIsComposerFocused] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const answer = useMemo(() => messages.filter((message) => message.role === "assistant").at(-1)?.content ?? "", [messages]);
+  const mapProgress = Math.min(input.length / 220, 1);
+  const mapStyle = {
+    "--map-progress": mapProgress,
+    "--map-rotation": `${mapProgress * 42}deg`
+  } as CSSProperties;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -124,18 +131,51 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="chatPanel">
+        <div className={`chatPanel ${isComposerFocused ? "isImagining" : ""}`} style={mapStyle}>
+          <svg className="routeMap" viewBox="0 0 900 620" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
+            <path className="routeGhost" d="M760 36C683 103 735 158 646 210C559 261 612 334 510 387C419 435 454 510 337 572" />
+            <path className="routeActive" pathLength="1" d="M760 36C683 103 735 158 646 210C559 261 612 334 510 387C419 435 454 510 337 572" />
+            <circle className="mapPoint pointOne" cx="760" cy="36" r="7" />
+            <circle className="mapPoint pointTwo" cx="646" cy="210" r="7" />
+            <circle className="mapPoint pointThree" cx="510" cy="387" r="7" />
+            <g className="compassRose" transform="translate(760 472)">
+              <circle r="48" />
+              <path d="M0-35 8-8 0 0-8-8Z" />
+              <path d="M0 35 8 8 0 0-8 8Z" />
+              <path d="M-35 0-8-8 0 0-8 8Z" />
+              <path d="M35 0 8-8 0 0 8 8Z" />
+              <circle r="4" />
+            </g>
+          </svg>
           {messages.length === 0 ? (
             <div className="emptyState">
-              <p className="sectionNumber">01 / Imagine</p>
-              <h2>What kind of journey are you craving?</h2>
-              <p>Share your dates, rhythm, budget, and curiosities. Your companion will research the details and shape them into a trip with room to breathe.</p>
-              <div className="promptNotes" aria-label="Planning suggestions">
-                <span>Place</span>
-                <span>Pace</span>
-                <span>Budget</span>
-                <span>Curiosity</span>
+              <div className="editorialCopy">
+                <p className="sectionNumber">01 / Imagine</p>
+                <h2>What kind of journey are you craving?</h2>
+                <p>Share your dates, rhythm, budget, and curiosities. Your companion will research the details and shape them into a trip with room to breathe.</p>
+                <div className="promptNotes" aria-label="Planning suggestions">
+                  <span><b>01</b> Place</span>
+                  <span><b>02</b> Pace</span>
+                  <span><b>03</b> Budget</span>
+                  <span><b>04</b> Curiosity</span>
+                </div>
               </div>
+              <figure className="destinationFeature">
+                <div className="featureImage">
+                  <Image
+                    alt="A quiet Malibu coastline framed by lush coastal foliage"
+                    fill
+                    priority
+                    sizes="(max-width: 560px) 100vw, (max-width: 880px) 45vw, 28vw"
+                    src="/images/malibu-coastal-jungle.png"
+                  />
+                </div>
+                <figcaption>
+                  <span>Pacific dispatch</span>
+                  <strong>Malibu, California</strong>
+                  <small>Morning light · 34.03° N</small>
+                </figcaption>
+              </figure>
             </div>
           ) : (
             messages.map((message, index) => (
@@ -156,6 +196,8 @@ export default function Home() {
             aria-label="Trip description"
             value={input}
             onChange={(event) => setInput(event.target.value)}
+            onFocus={() => setIsComposerFocused(true)}
+            onBlur={() => setIsComposerFocused(false)}
             placeholder="Tell me dates, budget, pace, interests, constraints, and where you are considering."
             rows={4}
           />
@@ -176,13 +218,24 @@ export default function Home() {
             <p className="sectionNumber">02 / Field notes</p>
             <h2>Research trail</h2>
           </div>
-          <span className={isRunning ? "statusLive" : ""}>{isRunning ? "Live" : "Ready"}</span>
+          <span className="statusBadge">
+            <i aria-hidden="true" />
+            {isRunning ? "Live" : "Ready"}
+          </span>
         </div>
         <ol className="logList">
           {researchLog.length === 0 ? (
-            <li>Your sources, searches, and research decisions will gather here.</li>
+            <li>
+              <small>Awaiting departure</small>
+              <span>Your sources, searches, and research decisions will gather here.</span>
+            </li>
           ) : (
-            researchLog.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)
+            researchLog.map((item, index) => (
+              <li key={`${item}-${index}`} style={{ "--note-index": index } as CSSProperties}>
+                <small>Field note {String(index + 1).padStart(2, "0")} · now</small>
+                <span>{item}</span>
+              </li>
+            ))
           )}
         </ol>
 
